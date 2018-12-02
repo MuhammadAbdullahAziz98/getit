@@ -103,7 +103,7 @@ public class MainMessages extends AppCompatActivity {
                                             for (DataSnapshot data : snapshot.getChildren()) {
                                                 if (data.hasChild("info")) {
                                                     Toast.makeText(getApplicationContext(), data.getKey(), Toast.LENGTH_SHORT).show();
-
+                                                    if(data.child("info").child("mEmail").getValue() != null && data.child("info").child("tMail").getValue()!=null){
                                                     if ((data.child("info").child("mEmail").getValue().equals(getChild1) && data.child("info").child("tMail").getValue().equals(getChild2)) || (data.child("info").child("mEmail").getValue().equals(getChild2) && data.child("info").child("tMail").getValue().equals(getChild1))) {
                                                         Intent intent = new Intent(getApplicationContext(), Messenger.class);
                                                         intent.putExtra("key", data.getKey());
@@ -111,7 +111,7 @@ public class MainMessages extends AppCompatActivity {
                                                         startActivity(intent);
                                                         finish();
 
-                                                    }
+                                                    }}
                                                 }
                                             }
                                             if(notFound)

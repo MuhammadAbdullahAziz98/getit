@@ -49,8 +49,8 @@ public class Messenger extends AppCompatActivity {
 
     private String mUsername;
     private FirebaseDatabase mFirebaseDatabase;
-    private DatabaseReference mMessagesReference;
-    private DatabaseReference mMessagesDatabaseReference;
+    private DatabaseReference mMessagesChildDatabaseReference;
+    private DatabaseReference mMessagesDatabaseReference,mMessagesInfoReference;
     private ChildEventListener mChildEventListener;
     private FirebaseStorage mFirebaseStorage;
     private StorageReference mChatPhotosStorageReference;
@@ -74,19 +74,26 @@ public class Messenger extends AppCompatActivity {
         mFirebaseDatabase = FirebaseDatabase.getInstance();
         mFireBaseAuth = FirebaseAuth.getInstance();
         mFirebaseStorage = FirebaseStorage.getInstance();
-        mMessagesReference = mFirebaseDatabase.getReference().child("messages");
-        if(passage != null)
-            mMessagesDatabaseReference =  mFirebaseDatabase.getReference().child("messages").child(passage);
-        else {
+        mUsername = mFireBaseAuth.getCurrentUser().getDisplayName();
+        if(passage != null) {
+            mMessagesDatabaseReference = mFirebaseDatabase.getReference().child("messages").child(passage);
+            mMessagesChildDatabaseReference =  mFirebaseDatabase.getReference().child("messages").child(passage).child("msgs");
+            if(!mMessagesChildDatabaseReference.equals(null))
+                onSignedInInitialize(mUsername);
+
+        }else {
             String mEmail = intent.getStringExtra("mEmail");
             String tMail = intent.getStringExtra("theirMail");
+            mEmail = mFireBaseAuth.getCurrentUser().getEmail();
             Info info = new Info(mEmail,tMail);
-            mMessagesDatabaseReference = mFirebaseDatabase.getReference().child("messages").push().child("info");
-            mMessagesDatabaseReference.setValue(info);
-
-//            mMessagesDatabaseReference = mFirebaseDatabase.getReference().child("messages").push();
+            mMessagesDatabaseReference = mFirebaseDatabase.getReference().child("messages").push();
+            mMessagesInfoReference = mMessagesDatabaseReference.child("info");
+            mMessagesInfoReference.setValue(info);
+            mMessagesChildDatabaseReference =  mMessagesDatabaseReference.child("msgs").push();
+            onSignedInInitialize(mUsername);
 
         }
+
         mChatPhotosStorageReference = mFirebaseStorage.getReference().child("chat_photos");
 
 
@@ -137,13 +144,13 @@ public class Messenger extends AppCompatActivity {
             @Override
             public void onClick(View view) {
                 Message message = new Message(mMessageEditText.getText().toString(), mUsername, null);
-                mMessagesDatabaseReference.push().setValue(message);
+                mMessagesChildDatabaseReference = mMessagesDatabaseReference.child("msgs");
+                mMessagesChildDatabaseReference.push().setValue(message);
                 // Clear input box
+                onSignedInInitialize(mUsername);
                 mMessageEditText.setText("");
             }
         });
-        mUsername = mFireBaseAuth.getCurrentUser().getDisplayName();
-        onSignedInInitialize(mUsername);
 
         mAuthStateListener = new FirebaseAuth.AuthStateListener() {
             @Override
@@ -178,7 +185,10 @@ public class Messenger extends AppCompatActivity {
                         public void onSuccess(Uri uri) {
                             Uri downloadUrl = uri;
                             Message message = new Message(null,mUsername,downloadUrl.toString());
-                            mMessagesDatabaseReference.push().setValue(message);
+                            mMessagesChildDatabaseReference = mMessagesDatabaseReference.child("msgs");
+                            mMessagesChildDatabaseReference.push().setValue(message);
+                            // Clear input box
+                            onSignedInInitialize(mUsername);
 
                         }
                     });
@@ -199,7 +209,7 @@ public class Messenger extends AppCompatActivity {
     }
     private void detachDatabaseReadListener() {
         if (mChildEventListener != null) {  //if not already detached , remove db listener
-            mMessagesDatabaseReference.removeEventListener(mChildEventListener);    //stops checking for new entries in db
+        //    mMessagesDatabaseReference.removeEventListener(mChildEventListener);    //stops checking for new entries in db
             mChildEventListener = null;
         }
     }
@@ -210,8 +220,8 @@ public class Messenger extends AppCompatActivity {
                 @Override
                 public void onChildAdded(@NonNull DataSnapshot dataSnapshot, @Nullable String s) {
 
-  //                  Message message = dataSnapshot.getValue(Message.class);
-    //                mMessageAdapter.add(message);
+                    Message message = dataSnapshot.getValue(Message.class);
+                    mMessageAdapter.add(message);
                     //if any new msgs , display them.
                 }
 
@@ -235,7 +245,7 @@ public class Messenger extends AppCompatActivity {
 
                 }
             };
-//            mMessagesDatabaseReference.addChildEventListener(mChildEventListener);
+            mMessagesChildDatabaseReference.addChildEventListener(mChildEventListener);
         }
     }
 
