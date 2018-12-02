@@ -1,21 +1,21 @@
 {
   "project_info": {
-    "project_number": "1010643471911",
-    "firebase_url": "https://getit-b1385.firebaseio.com",
-    "project_id": "getit-b1385",
-    "storage_bucket": "getit-b1385.appspot.com"
+    "project_number": "815070793587",
+    "firebase_url": "https://getit-62129.firebaseio.com",
+    "project_id": "getit-62129",
+    "storage_bucket": "getit-62129.appspot.com"
   },
   "client": [
     {
       "client_info": {
-        "mobilesdk_app_id": "1:1010643471911:android:cd99778044830f5c",
+        "mobilesdk_app_id": "1:815070793587:android:cd99778044830f5c",
         "android_client_info": {
           "package_name": "com.example.lenovo.getit"
         }
       },
       "oauth_client": [
         {
-          "client_id": "1010643471911-f7ffrsjiu70mgur80buivup65c97hff1.apps.googleusercontent.com",
+          "client_id": "815070793587-vv5589v90gcl66jumaq81icqdeiflgou.apps.googleusercontent.com",
           "client_type": 1,
           "android_info": {
             "package_name": "com.example.lenovo.getit",
@@ -23,13 +23,13 @@
           }
         },
         {
-          "client_id": "1010643471911-005rdft4gko9kso4mkcbua8870m0it6s.apps.googleusercontent.com",
+          "client_id": "815070793587-n7qbvmmoa2vfr31sima6ig3mso4u1jm3.apps.googleusercontent.com",
           "client_type": 3
         }
       ],
       "api_key": [
         {
-          "current_key": "AIzaSyC9XrFDt3piKH-Mu0lg9Z4-bAyxn2EWzJ8"
+          "current_key": "AIzaSyDGswiyHGEWdPXOPYtbMzBrt4GYxpEgVZ0"
         }
       ],
       "services": {
@@ -40,7 +40,7 @@
           "status": 2,
           "other_platform_oauth_client": [
             {
-              "client_id": "1010643471911-005rdft4gko9kso4mkcbua8870m0it6s.apps.googleusercontent.com",
+              "client_id": "815070793587-n7qbvmmoa2vfr31sima6ig3mso4u1jm3.apps.googleusercontent.com",
               "client_type": 3
             }
           ]

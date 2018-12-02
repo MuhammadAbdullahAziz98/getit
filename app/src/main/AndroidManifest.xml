@@ -19,7 +19,9 @@
         <activity
             android:name=".MainApp"
             android:label="@string/title_activity_main_app"
-            android:theme="@style/AppTheme.NoActionBar"></activity>
+            android:theme="@style/AppTheme.NoActionBar" />
+        <activity android:name=".MainMessages" />
+        <activity android:name=".Messenger"></activity>
     </application>
 
 </manifest>

@@ -8,6 +8,7 @@ import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.net.Uri;
 import android.os.Handler;
+import android.provider.MediaStore;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
 import android.support.v7.app.AppCompatActivity;
@@ -32,6 +33,7 @@ import com.bumptech.glide.Glide;
 import com.bumptech.glide.RequestManager;
 import com.bumptech.glide.request.FutureTarget;
 import com.bumptech.glide.request.target.Target;
+import com.facebook.messenger.Messenger;
 import com.firebase.ui.auth.AuthUI;
 import com.google.android.gms.tasks.OnSuccessListener;
 import com.google.firebase.auth.FirebaseAuth;
@@ -41,12 +43,15 @@ import com.google.firebase.database.DataSnapshot;
 import com.google.firebase.database.DatabaseError;
 import com.google.firebase.database.DatabaseReference;
 import com.google.firebase.database.FirebaseDatabase;
+import com.google.firebase.database.Query;
+import com.google.firebase.database.ValueEventListener;
 import com.google.firebase.storage.FirebaseStorage;
 import com.google.firebase.storage.OnProgressListener;
 import com.google.firebase.storage.StorageReference;
 import com.google.firebase.storage.UploadTask;
 
 import java.io.File;
+import java.io.IOException;
 import java.util.Arrays;
 import java.util.concurrent.ExecutionException;
 
@@ -74,6 +79,11 @@ public class MainActivity extends AppCompatActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         handler = new Handler();
+        mFirebaseDatabase = FirebaseDatabase.getInstance();
+        mProfilePicDatabaseReference =mFirebaseDatabase.getReference().child("profilePics");
+
+        mFirebaseStorage = FirebaseStorage.getInstance();
+        mProfilePicturesStorageReference = mFirebaseStorage.getReference().child("profile_pics");
         //
         mFireBaseAuth = FirebaseAuth.getInstance();
         mAuthStateListener = new FirebaseAuth.AuthStateListener() {
@@ -85,9 +95,14 @@ public class MainActivity extends AppCompatActivity {
                     signedIn();
                     profilePicScreen = true;
                     Toast.makeText(getApplicationContext(),user.getUid(),Toast.LENGTH_LONG).show();
+                    Query query = mFirebaseDatabase.getReference("profilePics").orderByChild("email").equalTo(user.getEmail());
+                    query.addValueEventListener(valueEventListener);
+
                     //user is signed in
+
                     //Toast.makeText(getApplicationContext(),"Welcome!",Toast.LENGTH_SHORT).show();
                     onSignedInInitialize(user.getEmail(),user.getDisplayName());
+
                 }
                 else{
                     //user is signed out
@@ -105,12 +120,6 @@ public class MainActivity extends AppCompatActivity {
         else {
             signedIn();
         }
-        mFirebaseDatabase = FirebaseDatabase.getInstance();
-        mProfilePicDatabaseReference =mFirebaseDatabase.getReference().child("profilePics");
-
-    //    mProfilePicDatabaseReference.push().setValue("http");
-        mFirebaseStorage = FirebaseStorage.getInstance();
-        mProfilePicturesStorageReference = mFirebaseStorage.getReference().child("profile_pics");
 
     }
     @Override
@@ -118,13 +127,18 @@ public class MainActivity extends AppCompatActivity {
         super.onRestoreInstanceState(savedInstanceState);
         try{
             profilePicScreen = (boolean) savedInstanceState.getSerializable("profilePicScreen");
+            checked = (boolean) savedInstanceState.getSerializable("profilePicSet");
             path = (String) savedInstanceState.getSerializable("profilePicPath");
             signedIn();
             if(profilePicScreen)
                 signedIn();
-            Glide.with(profilePicView.getContext())
-                .load(path)
-                .into(profilePicView);
+            if(checked)
+            {
+                setPic();
+                Glide.with(profilePicView.getContext())
+                        .load(path)
+                        .into(profilePicView);
+            }
         }
         catch(Exception ex){ }
     }
@@ -133,6 +147,7 @@ public class MainActivity extends AppCompatActivity {
         super.onSaveInstanceState(savedInstanceState);
         try {
             savedInstanceState.putSerializable("profilePicScreen", profilePicScreen);
+            savedInstanceState.putSerializable("profilePicSet",  checked);
             savedInstanceState.putSerializable("profilePicPath",path);
 
         } catch (Exception ex) {
@@ -150,14 +165,47 @@ public class MainActivity extends AppCompatActivity {
                         .setLogo(R.drawable.getit)
                         .build(),
                 RC_SIGN_IN);
-
     }
+    ValueEventListener valueEventListener = new ValueEventListener() {
+        @Override
+        public void onDataChange(@NonNull DataSnapshot dataSnapshot) {
+            if(dataSnapshot.exists()) {
+                for (DataSnapshot snapshot : dataSnapshot.getChildren()) {
+                    Profile profile = snapshot.getValue(Profile.class);
+                    if(profile ==null)
+                        Toast.makeText(getApplicationContext(),"NO PROFILE",Toast.LENGTH_SHORT).show();
+                    downloadPicToDisplay(profile);
+                }
+            }
+  //          else
+//                Toast.makeText(getApplicationContext(),"Wrong!",Toast.LENGTH_LONG).show();
+        }
+
+        @Override
+        public void onCancelled(@NonNull DatabaseError databaseError) {
+            //Toast.makeText(getApplicationContext(),"Error",Toast.LENGTH_LONG).show();
+        }
+    };
     protected void onActivityResult(int requestCode,int resultCode,Intent data){
         super.onActivityResult(requestCode,resultCode,data);
         if(requestCode == RC_SIGN_IN) {
             if (resultCode == RESULT_OK) {
                 Toast.makeText(getApplicationContext(), "Signed In!", Toast.LENGTH_SHORT).show();
+
                 signedIn();
+                /*if(mEmail!=ANONYMOUS) {
+                    Query query = mFirebaseDatabase.getReference("profilePics").orderByChild("email").equalTo(mEmail);
+
+                    query.addValueEventListener(valueEventListener);
+                }
+                else{
+                    Toast.makeText(getApplicationContext(),"ANONYMOUS EMAIL",Toast.LENGTH_SHORT).show();
+                }*/
+                /*
+                Query query = mFirebaseDatabase.getReference("profilePics").orderByChild("email").equalTo(mEmail);
+                query.addValueEventListener(valueEventListener);
+
+*/
                 //Intent intent = new Intent()
                 //mMessagesDatabaseReference.addListenerForSingleValueEvent(valueEventListener);
                 //         Query query = mFirebaseDatabase.getReference("messages").orderByChild("name").equalTo("Muhammad Abdullah");
@@ -170,24 +218,28 @@ public class MainActivity extends AppCompatActivity {
             }
         }
         else if(requestCode == RC_PHOTO_PICKER && resultCode == RESULT_OK){
-            mProgressBar.setIndeterminate(true);
             Uri selectedImageUri = data.getData();
+            try {
+                Bitmap bitmap = MediaStore.Images.Media.getBitmap(this.getContentResolver(), selectedImageUri);
+                profilePicView.setImageBitmap(bitmap);
+            } catch (IOException e) {
+                e.printStackTrace();
+                Toast.makeText(getApplicationContext(),"COuldn't get pic",Toast.LENGTH_SHORT).show();
+            }
+            mProgressBar.setIndeterminate(true);
+
             final StorageReference photoRef = mProfilePicturesStorageReference.child(selectedImageUri.getLastPathSegment());
             mProgressBar.setVisibility(View.VISIBLE);
+            if(checked)
+            {
+                profilePicView.setImageResource(0);
+                setPic();
 
+            }
             photoRef.putFile(selectedImageUri).addOnProgressListener(this, new OnProgressListener<UploadTask.TaskSnapshot>() {
                 @Override
                 public void onProgress(UploadTask.TaskSnapshot taskSnapshot) {
-                    RelativeLayout.LayoutParams params= new RelativeLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT);
-                    params.addRule(RelativeLayout.BELOW, R.id.signOut);
-                    getProfilePic.setLayoutParams(params);
-                    getProfilePic.setText("Change Pic");
-                    getProfilePic.setBackgroundResource(android.R.drawable.btn_default);
-                    params= new RelativeLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT);
-                    params.addRule(RelativeLayout.BELOW, R.id.profilePicUpload);
-                    params.addRule(RelativeLayout.CENTER_HORIZONTAL);
-                    profilePicView.setLayoutParams(params);
-                    mProgressBar.setVisibility(View.VISIBLE);
+                    setPic();
                     checked = true;
                 }
             }).addOnSuccessListener(this, new OnSuccessListener<UploadTask.TaskSnapshot>() {
@@ -197,47 +249,72 @@ public class MainActivity extends AppCompatActivity {
                     photoRef.getDownloadUrl().addOnSuccessListener(new OnSuccessListener<Uri>() {
                         @Override
                         public void onSuccess(Uri uri) {
+                            //Intent intent  = new Intent(getApplicationContext(),MainApp.class);
+                            // startActivity(intent);
                             Uri downloadUrl = uri;
                             final Profile profile = new Profile(mUsername,mEmail,downloadUrl.toString());
                             mProfilePicDatabaseReference.push().setValue(profile);
-                            /*Glide.with(profilePicView.getContext())
-                                    .load(profile.getPhotoUrl())
-                                    .into(profilePicView);
-                            */
-                            final Thread thread = new Thread (new Runnable(){
-                                public void run() {
-                                    try {
-                                        FutureTarget<File> future = Glide.with(getApplicationContext()).load(profile.getPhotoUrl()).downloadOnly(Target.SIZE_ORIGINAL, Target.SIZE_ORIGINAL);
-                                        File file = null;
-                                        try {
-                                            file = future.get();
-                                        } catch (ExecutionException e) {
-                                            e.printStackTrace();
-                                        } catch (InterruptedException e) {
-                                            e.printStackTrace();
-                                        }
-                                        path = file.getAbsolutePath();
-                                        handler.post(new Runnable() {
-                                            public void run() {
-                                                mProgressBar.setIndeterminate(false);
-                                                mProgressBar.setVisibility(View.GONE);
-                                                Glide.with(profilePicView.getContext())
-                                                        .load(path)
-                                                        .into(profilePicView);
+                            downloadPicToDisplay(profile);
 
-                                            }
-                                        });
-                                    } catch (Exception ex) { }
-                                    }
-                                });
-                                thread.start();
-                            //Intent intent  = new Intent(getApplicationContext(),MainApp.class);
-                            // startActivity(intent);
                         }
                     });
                 }
             });
         }
+    }
+    protected void downloadPicToDisplay(final Profile profile){
+        final Thread thread = new Thread (new Runnable(){
+            public void run() {
+                try {
+                    Profile p = profile;
+                    FutureTarget<File> future = Glide.with(getApplicationContext()).load(p.getPhotoUrl()).downloadOnly(Target.SIZE_ORIGINAL, Target.SIZE_ORIGINAL);
+
+                    File file = null;
+                    try {
+                        file = future.get();
+                    } catch (ExecutionException e) {
+                        e.printStackTrace();
+                    } catch (InterruptedException e) {
+                        e.printStackTrace();
+                    }
+                    path = file.getAbsolutePath();
+                    handler.post(new Runnable() {
+                        public void run() {
+                            Button msg = findViewById(R.id.msgs);
+                            msg.setOnClickListener(new View.OnClickListener() {
+                                @Override
+                                public void onClick(View view) {
+                                    Intent i = new Intent(getApplicationContext(), MainMessages.class);
+                                    i.putExtra("userEmail",mEmail);
+                                    startActivity(i);
+                                }
+                            });
+                            mProgressBar.setIndeterminate(false);
+                            mProgressBar.setVisibility(View.GONE);
+                            Glide.with(profilePicView.getContext())
+                                    .load(path)
+                                    .into(profilePicView);
+
+                        }
+                    });
+                } catch (Exception ex) { }
+            }
+        });
+        thread.start();
+
+    }
+    protected void setPic(){
+        RelativeLayout.LayoutParams params= new RelativeLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT);
+        params.addRule(RelativeLayout.BELOW, R.id.signOut);
+        getProfilePic.setLayoutParams(params);
+        getProfilePic.setText("Change Pic");
+        getProfilePic.setBackgroundResource(android.R.drawable.btn_default);
+        params= new RelativeLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT);
+        params.addRule(RelativeLayout.BELOW, R.id.profilePicUpload);
+        params.addRule(RelativeLayout.CENTER_HORIZONTAL);
+        profilePicView.setLayoutParams(params);
+        mProgressBar.setVisibility(View.VISIBLE);
+
     }
     protected void signedIn(){
         setContentView(R.layout.activity_main);
@@ -251,6 +328,7 @@ public class MainActivity extends AppCompatActivity {
             @Override
             public void onClick(View v) {
                 AuthUI.getInstance().signOut(getApplicationContext());
+                auth();
             }
         });
         getProfilePic.setOnClickListener(new View.OnClickListener() {
@@ -265,6 +343,15 @@ public class MainActivity extends AppCompatActivity {
         });
 
     }
+
+    @Override
+    protected void onResume() {
+        super.onResume();
+        if(!checked)
+            mFireBaseAuth.addAuthStateListener(mAuthStateListener);
+
+    }
+
     void animateLogo(){
         final AnimatorSet animationSet = new AnimatorSet();
         final ImageView logo = findViewById(R.id.logo);
