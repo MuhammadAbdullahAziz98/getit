@@ -1,7 +1,0 @@
-<resources>
-    <string name="app_name">getit</string>
-    <string name="title_activity_main_app">MainApp</string>
-    <string name="sign_out">Sign Out</string>
-    <string name="send_button_label">Send</string>
-
-</resources>
