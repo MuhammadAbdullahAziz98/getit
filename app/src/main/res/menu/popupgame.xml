@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="utf-8"?>
+<menu xmlns:android="http://schemas.android.com/apk/res/android">
+
+
+    <item
+        android:id="@+id/PUBG"
+        android:title="PUBG" />
+    <item
+        android:id="@+id/FallOut"
+        android:title="Fall Out" />
+    <item
+        android:id="@+id/HitMan"
+        android:title="Hit Man 2" />
+    <item
+        android:id="@+id/ShadowFight"
+        android:title="Shadow Fight 2" />
+    <item
+        android:id="@+id/Fifa19"
+        android:title="Fifa'19" />
+    <item
+        android:id="@+id/soul6"
+        android:title="Soulcalibur VI" />
+
+</menu>

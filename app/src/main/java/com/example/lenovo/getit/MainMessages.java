@@ -1,6 +1,7 @@
 package com.example.lenovo.getit;
 
 import android.content.Intent;
+import android.content.IntentFilter;
 import android.support.annotation.NonNull;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
@@ -8,6 +9,7 @@ import android.view.View;
 import android.widget.AdapterView;
 import android.widget.LinearLayout;
 import android.widget.ListView;
+import android.widget.ProgressBar;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -23,25 +25,38 @@ import com.google.firebase.database.ValueEventListener;
 
 import java.io.Serializable;
 import java.util.ArrayList;
+import java.util.concurrent.Semaphore;
 
 public class MainMessages extends AppCompatActivity {
 
     FirebaseDatabase mFirebaseDatabase;
-    DatabaseReference mProfilePicDatabaseReference,mMessagesDatabaseReference;
-    ArrayList<String> emails;
+    DatabaseReference mDatabaseReference,mMessagesDatabaseReference;
+    ArrayList<String> ids,dataArr;
     Intent intent;
     String viewText,mEmail,finalPassage;
     private FirebaseAuth mFireBaseAuth;
+    ListView view;
+    boolean done =false;
+    String tMail;
+    CheckInternetBroadcast checker;
+
     private FirebaseAuth.AuthStateListener mAuthStateListener;
+    TextListAdapter adapter;
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main_messages);
+        checker = new CheckInternetBroadcast();
+        IntentFilter filter = new IntentFilter();
+        filter.addAction("android.net.conn.CONNECTIVITY_CHANGE");
+        registerReceiver(checker, filter);
+
         intent = getIntent();
-        emails = new ArrayList<>();
+        ids = new ArrayList<>();
+        dataArr = new ArrayList<>();
         mFirebaseDatabase = FirebaseDatabase.getInstance();
-        mProfilePicDatabaseReference = mFirebaseDatabase.getReference().child("profilePics");
-        mProfilePicDatabaseReference.addListenerForSingleValueEvent(valueEventListener);
+        mDatabaseReference = mFirebaseDatabase.getReference().child("Users");
+//        mDatabaseReference.addListenerForSingleValueEvent(valueEventListener);
         mMessagesDatabaseReference=mFirebaseDatabase.getReference().child("messages");
 //        mProfilePicDatabaseReference.addValueEventListener(valueEventListener);
 
@@ -62,104 +77,101 @@ public class MainMessages extends AppCompatActivity {
                 }
             }
         };
+        final String getChild1 = mFireBaseAuth.getCurrentUser().getUid();
+        view = new ListView(getApplicationContext());
+        view.setOnItemClickListener(new AdapterView.OnItemClickListener() {
+            @Override
+            public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
+                //Toast.makeText(getApplicationContext(),dataArr.get(position) , Toast.LENGTH_SHORT).show();
+                Intent intent = new Intent(getApplicationContext(), Messenger.class);
+                intent.putExtra("key", dataArr.get(position));
+                intent.putExtra("theirMail",tMail);
+                startActivity(intent);
+                finish();
 
-    }
-    boolean done =false;
-    ValueEventListener valueEventListener = new ValueEventListener() {
-        @Override
-        public void onDataChange(@NonNull final DataSnapshot dataSnapshot) {
-            if (dataSnapshot.exists()) {
-                int size = 0;
-                for (DataSnapshot snapshot : dataSnapshot.getChildren()) {
-                    Profile profile = snapshot.getValue(Profile.class);
-                    emails.add(profile.getEmail());
-                    size++;
-                }
-                if (size > 0) {
-                    TextListAdapter adapter = new TextListAdapter(getApplicationContext(), emails);
-                    ListView view = new ListView(getApplicationContext());
-                    view.setAdapter(adapter);
-                    view.setOnItemClickListener(new AdapterView.OnItemClickListener() {
-                        @Override
-                        public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
-                            TextView tv = (TextView) view.findViewById(R.id.email);
-                            viewText = tv.getText().toString();
-                            mEmail = intent.getStringExtra("userEmail");
-//                            Toast.makeText(getApplicationContext(), mEmail, Toast.LENGTH_SHORT).show();
-                            if(viewText!= null)
-                                Toast.makeText(getApplicationContext(), viewText, Toast.LENGTH_SHORT).show();
-                            else
-                                Toast.makeText(getApplicationContext(), "null second", Toast.LENGTH_SHORT).show();
 
-                            final String getChild1 = mEmail;
-                            final String getChild2 = viewText;
-                            ValueEventListener valueEventListener1 = mMessagesDatabaseReference.addValueEventListener(new ValueEventListener() {
-                                @Override
-                                public void onDataChange(DataSnapshot snapshot) {
-                                    //Toast.makeText(getApplicationContext(), "got child", Toast.LENGTH_SHORT).show();
-                                    if (!done) {
-                                        done =true;
-                                        boolean notFound = true;
-                                        if (snapshot.hasChildren()) {
-                                            for (DataSnapshot data : snapshot.getChildren()) {
-                                                if (data.hasChild("info")) {
-                                                    Toast.makeText(getApplicationContext(), data.getKey(), Toast.LENGTH_SHORT).show();
-                                                    if(data.child("info").child("mEmail").getValue() != null && data.child("info").child("tMail").getValue()!=null){
-                                                    if ((data.child("info").child("mEmail").getValue().equals(getChild1) && data.child("info").child("tMail").getValue().equals(getChild2)) || (data.child("info").child("mEmail").getValue().equals(getChild2) && data.child("info").child("tMail").getValue().equals(getChild1))) {
-                                                        Intent intent = new Intent(getApplicationContext(), Messenger.class);
-                                                        intent.putExtra("key", data.getKey());
-                                                        notFound = false;
-                                                        startActivity(intent);
-                                                        finish();
+            }
+        });
+        adapter = new TextListAdapter(getApplicationContext(), ids);
+        final ProgressBar p = findViewById(R.id.msgsbar);
+//        p.setVisibility(View.VISIBLE);
+        view.setAdapter(adapter);
+        ValueEventListener valueEventListener1 = mMessagesDatabaseReference.addValueEventListener(new ValueEventListener() {
+            @Override
+            public void onDataChange(DataSnapshot snapshot) {
+                //Toast.makeText(getApplicationContext(), "got child", Toast.LENGTH_SHORT).show();
+                if (!done) {
+                    done = true;
+                    boolean notFound = true;
+                    if (snapshot.hasChildren()) {
+                        for (final DataSnapshot data : snapshot.getChildren()) {
+                            if (data.hasChild("info")) {
+                                //Toast.makeText(getApplicationContext(), data.getKey(), Toast.LENGTH_SHORT).show();
+                                String s1 = data.child("info").child("tMail").getValue().toString();
+                                String s2 = data.child("info").child("mEmail").getValue().toString();
 
-                                                    }}
-                                                }
+                                if (s1 != null && s2 != null) {
+                                    Toast.makeText(getApplicationContext(),"HELO!",Toast.LENGTH_SHORT).show();
+                                    if (s1.equals(mFireBaseAuth.getCurrentUser().getUid())) {
+                                        tMail = s2;
+                                        Toast.makeText(getApplicationContext(),s1,Toast.LENGTH_SHORT).show();
+                                        mDatabaseReference.child(s2).child("Name").addValueEventListener(new ValueEventListener() {
+                                            @Override
+                                            public void onDataChange(@NonNull DataSnapshot dataSnapshot) {
+//                                                ids.add(dataSnapshot.getValue().toString());
+                                                adapter.add(dataSnapshot.getValue().toString());
                                             }
-                                            if(notFound)
-                                            {
-                                                Intent intent = new Intent(getApplicationContext(), Messenger.class);
-                                                intent.putExtra("key", "null");
 
-                                                intent.putExtra("mEmail", getChild1);
-                                                intent.putExtra("theirMail", getChild2);
-
-                                                startActivity(intent);
+                                            @Override
+                                            public void onCancelled(@NonNull DatabaseError databaseError) {
 
                                             }
-                                        } else {
-                                            Intent intent = new Intent(getApplicationContext(), Messenger.class);
-                                            intent.putExtra("key", "null");
+                                        });
+                                        dataArr.add(data.getKey());
+                                    }
+                                    else if(s2.equals(mFireBaseAuth.getCurrentUser().getUid())){
+                                        tMail = s1;
+                                        Toast.makeText(getApplicationContext(),s2,Toast.LENGTH_SHORT).show();
+                                        mDatabaseReference.child(s1).child("Name").addValueEventListener(new ValueEventListener() {
+                                            @Override
+                                            public void onDataChange(@NonNull DataSnapshot dataSnapshot) {
+  //                                              ids.add(dataSnapshot.getValue().toString());
+                                                adapter.add(dataSnapshot.getValue().toString());
+                                            }
 
-                                            intent.putExtra("mEmail", getChild1);
-                                            intent.putExtra("theirMail", getChild2);
+                                            @Override
+                                            public void onCancelled(@NonNull DatabaseError databaseError) {
 
-                                            startActivity(intent);
-
-                                        }
+                                            }
+                                        });
+//                                        ids.add(mDatabaseReference.child(s1).child("Name").toString());
+                                        dataArr.add(data.getKey());
                                     }
                                 }
-
-
-
-                             @Override
-                                public void onCancelled(@NonNull DatabaseError databaseError) {
-
-                                }
-                            });
+                            }
                         }
-                    });
-
-                    LinearLayout linear = findViewById(R.id.mainLayout);
-                    linear.removeAllViews();
-                    linear.addView(view);
+                    }
+                        p.setIndeterminate(false);
+                        p.setVisibility(View.GONE);
+                            LinearLayout linear = findViewById(R.id.mainLayout);
+                            linear.removeAllViews();
+                            linear.addView(view);
                 }
             }
 
-        }
-        @Override
-        public void onCancelled(@NonNull DatabaseError databaseError) {
 
-        }
-    };
+            @Override
+            public void onCancelled(@NonNull DatabaseError databaseError) {
+
+            }
+        });
+
+
+    }
+    @Override
+    protected void onDestroy() {
+        super.onDestroy();
+        unregisterReceiver(checker);
+    }
 
 }

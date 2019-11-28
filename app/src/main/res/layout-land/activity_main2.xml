@@ -1,0 +1,76 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:id="@+id/main_layout"
+    android:orientation="vertical"
+    tools:context=".MainActivity2">
+
+    <ImageView
+        android:id="@+id/logo"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignParentStart="true"
+        android:layout_alignParentTop="true"
+        android:layout_gravity="center"
+        android:layout_marginStart="59dp"
+        android:paddingTop="30dp"
+        android:src="@drawable/logoimageonly"
+        android:layout_alignParentLeft="true"
+        android:layout_marginLeft="59dp" />
+
+    <ImageView
+        android:id="@+id/logoText"
+        android:layout_width="140dp"
+        android:layout_height="95dp"
+
+        android:layout_alignParentBottom="true"
+        android:layout_alignParentStart="true"
+        android:layout_gravity="center"
+        android:layout_marginBottom="10dp"
+        android:layout_marginStart="90dp"
+        android:src="@drawable/logtextonly"
+        android:visibility="visible"
+        android:layout_alignParentLeft="true"
+        android:layout_marginLeft="87dp" />
+
+    <Button
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_above="@+id/signInButton"
+        android:layout_alignStart="@+id/signInButton"
+        android:layout_gravity="center"
+        android:background="@drawable/signinemailbutton"
+        android:onClick="gotoEmail"
+        android:layout_alignLeft="@+id/signInButton" />
+
+    <Button
+        android:id="@+id/signInButton"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignBottom="@+id/logo"
+        android:layout_alignParentEnd="true"
+        android:layout_gravity="center"
+        android:layout_marginEnd="23dp"
+        android:background="@drawable/signupgooglebutton"
+        android:visibility="visible"
+        tools:visibility="visible"
+        android:layout_alignParentRight="true"
+        android:layout_marginRight="23dp" />
+    />
+</RelativeLayout>
+<!--
+    <com.google.android.gms.common.SignInButton
+        android:id="@+id/signInButton"
+        android:layout_width="190dp"
+        android:layout_height="wrap_content"
+        android:layout_alignParentBottom="true"
+        android:layout_centerHorizontal="true"
+        android:layout_gravity="center"
+        android:layout_marginBottom="178dp"
+        android:visibility="visible"
+        tools:visibility="visible" />
+
+-->

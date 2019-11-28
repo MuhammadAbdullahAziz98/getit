@@ -1,6 +1,10 @@
 package com.example.lenovo.getit;
 
+import android.content.ComponentName;
+import android.content.Context;
 import android.content.Intent;
+import android.content.IntentFilter;
+import android.content.ServiceConnection;
 import android.graphics.Bitmap;
 import android.graphics.Canvas;
 import android.graphics.Color;
@@ -8,6 +12,7 @@ import android.graphics.ColorFilter;
 import android.graphics.drawable.BitmapDrawable;
 import android.graphics.drawable.Drawable;
 import android.media.Image;
+import android.os.IBinder;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
 import android.support.v7.app.AppCompatActivity;
@@ -39,16 +44,27 @@ public class SignUpEmail extends AppCompatActivity {
     String password,email,name;
     boolean passwordOn = true;
     ImageButton im;
+    SignUpService service;
+    boolean bound = false;
+    CheckInternetBroadcast checker;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_sign_up_email);
+        checker = new CheckInternetBroadcast();
+        IntentFilter filter = new IntentFilter();
+        filter.addAction("android.net.conn.CONNECTIVITY_CHANGE");
+        registerReceiver(checker, filter);
+
         mFirebaseAuth = FirebaseAuth.getInstance();
         Intent intent= getIntent();
         email = intent.getStringExtra("email");
         passwordEditText = findViewById(R.id.getPassword);
         nameEditText = findViewById(R.id.getUsername);
         mDatabaseRef = FirebaseDatabase.getInstance().getReference().child("Users");
+        Intent i = new Intent(this,SignUpService.class);
+        bindService(i,connection, Context.BIND_AUTO_CREATE);
         im = findViewById(R.id.showPass);
         im.setOnClickListener(new android.view.View.OnClickListener() {
             @Override
@@ -79,28 +95,32 @@ public class SignUpEmail extends AppCompatActivity {
                 view.setBackgroundColor(Color.parseColor("#5a0c0c"));
                 signUp.setTextColor(Color.parseColor("#FFFFFF"));
                 if(!TextUtils.isEmpty(name) && ! TextUtils.isEmpty(password)){
-                    final String nameFinal = name;
-                    mFirebaseAuth.createUserWithEmailAndPassword(email,password)
+                    if(bound) {
+                        mFirebaseAuth.createUserWithEmailAndPassword(email, password)
+                                .addOnCompleteListener(new OnCompleteListener<AuthResult>() {
+                                    @Override
+                                    public void onComplete(@NonNull Task<AuthResult> task) {
+                                        if (task.isSuccessful()) {
+                                            service.saveProfile(name);
+                                            Toast.makeText(getApplicationContext(), "User registered Successfully!", Toast.LENGTH_SHORT).show();
+                                            error.setVisibility(android.view.View.INVISIBLE);
 
-                            .addOnCompleteListener(new OnCompleteListener<AuthResult>() {
-                                @Override
-                                public void onComplete(@NonNull Task<AuthResult> task) {
-                                    if(task.isSuccessful()){
-                                        error.setVisibility(android.view.View.GONE);
-                                        String user_id = mFirebaseAuth.getCurrentUser().getUid();
-                                        DatabaseReference currenUserdb = mDatabaseRef.child(user_id);
-                                        currenUserdb.child("Name").setValue(nameFinal);
-                                        Toast.makeText(getApplicationContext(),"User registered Successfully!",Toast.LENGTH_SHORT).show();
-                                        Intent i = new Intent(getApplicationContext(),SubMain.class);
-                                        i.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP);
-                                        startActivity(i);
-                                    }
-                                    else if(!task.isSuccessful()){
-                                        Toast.makeText(getApplicationContext(),"An Error Occured While registering the user!",Toast.LENGTH_SHORT).show();
-                                    }
+                                            Intent intent1 = new Intent(getApplicationContext(), SetProfilePicActivity.class);
+                                            intent1.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP);
+                                            startActivity(intent1);
 
-                                }
-                            });
+                                        } else if (!task.isSuccessful()) {
+                                            Toast.makeText(getApplicationContext(), "An Error Occured While registering the user!", Toast.LENGTH_SHORT).show();
+                                        }
+
+                                    }
+                                });
+                    }
+                    else{
+                        Toast.makeText(getApplicationContext(),"Failed to start service", Toast.LENGTH_SHORT).show();
+                    }
+
+
                 }
                 else
                 {
@@ -111,6 +131,24 @@ public class SignUpEmail extends AppCompatActivity {
             }
         });
 
+    }
+    private ServiceConnection connection = new ServiceConnection(){
+        @Override
+        public void onServiceConnected(ComponentName className, IBinder service){
+            SignUpService.LocalBinder binder = (SignUpService.LocalBinder) service;
+            SignUpEmail.this.service = binder.getService();
+            bound = true;
+        }
+        @Override
+        public void onServiceDisconnected(ComponentName className){
+            bound = false;
+            Toast.makeText(getApplicationContext(),"Service disconnected",Toast.LENGTH_SHORT).show();
+        }
+    };
+    @Override
+    protected void onDestroy() {
+        super.onDestroy();
+        unregisterReceiver(checker);
     }
 
 

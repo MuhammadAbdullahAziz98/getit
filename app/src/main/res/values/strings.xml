@@ -1,6 +1,5 @@
 <resources>
     <string name="title_activity_login">Sign in</string>
-
     <!-- Strings related to login -->
     <string name="prompt_email">Email</string>
     <string name="prompt_password">Password (optional)</string>
@@ -48,5 +47,23 @@
 
     <string name="google_status_fmt">Google User: %s</string>
     <string name="google_title_text">Google Sign In</string>
+    <string name="nav_home">Home</string>
+    <string name="nav_shop">Shop</string>
+    <string name="nav_categories">Categories</string>
+    <string name="nav_account">Account</string>
+
+    <!-- TODO: Remove or change this placeholder text -->
+    <string name="hello_blank_fragment">Hello blank fragment</string>
+    <string name="title_activity_sub_categories">SubCategories</string>
+
+
+    <string name="title_activity_new_images">NewImagesAct</string>
+    <string name="next">Next</string>
+    <string name="include_some_details">INCLUDE SOME DETAILS</string>
+    <string name="condition">Condition*</string>
+    <string name="used">USED</string>
+    <string name="company">Company</string>
+    <string name="description">Description*</string>
+
 
 </resources>

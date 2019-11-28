@@ -20,6 +20,12 @@ allprojects {
     repositories {
         google()
         jcenter()
+        // admob dependencies start here
+        maven {
+            url "https://maven.google.com"
+        }
+        // admob dependencies end here
+
         mavenLocal()
 
     }

@@ -251,9 +251,9 @@ public class MainActivity extends AppCompatActivity {
                             //Intent intent  = new Intent(getApplicationContext(),MainApp.class);
                             // startActivity(intent);
                             Uri downloadUrl = uri;
-                            final Profile profile = new Profile(mUsername,mEmail,downloadUrl.toString());
-                            mProfilePicDatabaseReference.push().setValue(profile);
-                            downloadPicToDisplay(profile);
+//                            final Profile profile = new Profile(mUsername,mEmail,downloadUrl.toString());
+  //                          mProfilePicDatabaseReference.push().setValue(profile);
+    //                        downloadPicToDisplay(profile);
 
                         }
                     });

@@ -1,9 +1,11 @@
 package com.example.lenovo.getit;
 
 import android.content.Intent;
+import android.content.IntentFilter;
 import android.support.annotation.NonNull;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
+import android.view.WindowManager;
 import android.widget.EditText;
 import android.widget.TextView;
 import android.widget.Toast;
@@ -19,6 +21,7 @@ public class GetEmailActivity extends AppCompatActivity {
     EditText email;
     TextView error;
     private FirebaseAuth.AuthStateListener mAuthStateListener;
+    CheckInternetBroadcast checker;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -37,6 +40,10 @@ public class GetEmailActivity extends AppCompatActivity {
             }
         };
         setContentView(R.layout.activity_get_email);
+        checker = new CheckInternetBroadcast();
+        IntentFilter filter = new IntentFilter();
+        filter.addAction("android.net.conn.CONNECTIVITY_CHANGE");
+        registerReceiver(checker, filter);
         email = findViewById(R.id.getEmail);
         error = findViewById(R.id.errorEmail);
 
@@ -75,4 +82,10 @@ public class GetEmailActivity extends AppCompatActivity {
                     });
         }
     }
+    @Override
+    protected void onDestroy() {
+        super.onDestroy();
+        unregisterReceiver(checker);
+    }
+
 }

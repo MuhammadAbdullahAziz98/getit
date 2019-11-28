@@ -1,0 +1,53 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    tools:context=".GetEmailActivity">
+
+    <TextView
+        android:id="@+id/textviewGetEmail"
+        android:layout_alignStart="@+id/getEmail"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignParentTop="true"
+        android:layout_marginTop="100dp"
+        android:layout_alignBottom="@+id/getEmail"
+        android:fontFamily="times"
+        android:text="Enter Email Here:"
+        android:textColor="#5a0c0c"
+        android:textSize="16sp"
+        android:layout_alignLeft="@+id/getEmail" />
+    <EditText
+        android:id="@+id/getEmail"
+        android:layout_centerInParent="true"
+        android:fontFamily="times"
+        android:textColor="#000"
+        android:hint="email@provider.com"
+        android:layout_width="350dp"
+        android:layout_height="50dp"
+        android:layout_marginLeft="15dp"/>
+
+    <TextView
+        android:id="@+id/errorEmail"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignParentBottom="true"
+        android:layout_alignStart="@+id/getEmail"
+        android:layout_marginBottom="220dp"
+        android:fontFamily="times"
+        android:textColor="#FF0000"
+        android:textSize="14dp"
+        android:layout_alignLeft="@+id/getEmail" />
+    <Button
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignParentBottom="true"
+        android:layout_marginLeft="270dp"
+        android:layout_marginBottom="15dp"
+        android:text="next"
+        android:onClick="check"/>
+
+</RelativeLayout>
+

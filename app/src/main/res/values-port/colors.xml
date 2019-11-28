@@ -6,4 +6,12 @@
     <color name="grey_100">#F5F5F5</color>
     <color name="grey_300">#E0E0E0</color>
     <color name="grey_500">#9E9E9E</color>
+    <color name="colorForegroundSMD">#5a0c0c</color>
+    <color name="colorBackgroundSMD">#FFFFFF</color>
+    <color name="colorBlack">#000000</color>
+    <color name="colorWhite">#FFFFFF</color>
+    <color name="colorLightGrey">#C0C0C0</color>
+    <color name="light_color">#8d6464</color>
+    <color name="dark_color">#5a0c0c</color>
+
 </resources>

@@ -1,6 +1,7 @@
 package com.example.lenovo.getit;
 
 import android.content.Intent;
+import android.content.IntentFilter;
 import android.support.annotation.NonNull;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
@@ -22,6 +23,8 @@ import com.google.firebase.database.DatabaseError;
 import com.google.firebase.database.DatabaseReference;
 import com.google.firebase.database.FirebaseDatabase;
 import com.google.firebase.database.ValueEventListener;
+import com.google.firebase.iid.FirebaseInstanceId;
+import com.google.firebase.iid.internal.FirebaseInstanceIdInternal;
 
 public class LogInActivity extends AppCompatActivity {
 
@@ -32,10 +35,17 @@ public class LogInActivity extends AppCompatActivity {
     Button login;
     FirebaseAuth mFirebaseAuth;
     DatabaseReference mDataRef;
+    CheckInternetBroadcast checker;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_log_in);
+        checker = new CheckInternetBroadcast();
+        IntentFilter filter = new IntentFilter();
+        filter.addAction("android.net.conn.CONNECTIVITY_CHANGE");
+        registerReceiver(checker, filter);
+
         passwordOn = true;
         passwordEditText = findViewById(R.id.getPasswordLogIn);
         Intent i = getIntent();
@@ -117,5 +127,11 @@ public class LogInActivity extends AppCompatActivity {
             }
         });
     }
+    @Override
+    protected void onDestroy() {
+        super.onDestroy();
+        unregisterReceiver(checker);
+    }
+
 
 }

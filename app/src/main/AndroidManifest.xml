@@ -6,7 +6,16 @@
     <uses-permission android:name="android.permission.GET_ACCOUNTS" />
     <uses-permission android:name="android.permission.READ_PROFILE" />
     <uses-permission android:name="android.permission.READ_CONTACTS" />
-    <uses-permission android:name="android.permission.INTERNET"/>
+    <uses-permission android:name="android.permission.INTERNET" />
+    <uses-permission android:name="android.permission.CAMERA" />
+    <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" />
+    <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" />
+    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
+
+    <uses-feature
+        android:name="android.hardware.camera"
+        android:required="true" />
+
     <application
         android:allowBackup="true"
         android:icon="@mipmap/ic_launcher"
@@ -14,6 +23,12 @@
         android:roundIcon="@mipmap/ic_launcher_round"
         android:supportsRtl="true"
         android:theme="@style/AppTheme">
+
+        <!-- for admob -->
+        <meta-data
+            android:name="com.google.android.gms.ads.APPLICATION_ID"
+            android:value="ca-app-pub-4541069819167372~3565880771" />
+
         <activity android:name=".MainActivity2">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
@@ -21,17 +36,58 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
-        <activity
-            android:name=".MainApp"
-            android:label="@string/title_activity_main_app"
-            android:theme="@style/AppTheme.NoActionBar" />
         <activity android:name=".MainMessages" />
         <activity android:name=".Messenger" />
         <activity android:name=".SignUpEmail" />
         <activity android:name=".MainActivity" />
         <activity android:name=".LogInActivity" />
         <activity android:name=".SubMain" />
-        <activity android:name=".GetEmailActivity" />
+        <activity
+            android:name=".GetEmailActivity"
+            android:windowSoftInputMode="stateVisible|adjustResize" />
+        <activity
+            android:name=".SubCategories"
+            android:label="@string/title_activity_sub_categories"
+            android:theme="@style/AppTheme" />
+
+        <service android:name=".SignUpService" />
+        <service android:name=".SetPicService" />
+
+        <activity android:name=".SetProfilePicActivity" />
+        <activity android:name=".CreatePostActivity" />
+        <activity android:name=".Catagory" />
+        <activity android:name=".SubCatagory" />
+        <activity
+            android:name=".DiscAndCondition"
+            android:screenOrientation="portrait"
+            android:windowSoftInputMode="stateVisible|adjustResize" />
+        <activity android:name=".GamesLayout" />
+        <activity
+            android:name=".AddPictures"
+            android:screenOrientation="portrait"
+            android:windowSoftInputMode="adjustResize" />
+        <activity
+            android:name=".Price"
+            android:windowSoftInputMode="stateVisible|adjustResize" />
+        <activity android:name=".ShowAd" />
+        <activity
+            android:name=".AddItem"
+            android:windowSoftInputMode="stateVisible|adjustResize" />
+        <activity android:name=".ProfileActivity" />
+        <activity android:name=".PaypalInt" />
+        <activity android:name=".PaymentDetails" />
+        <activity android:name=".Cart"
+            android:screenOrientation="portrait"/>
+        <activity android:name=".viewAdFromFeed" />
+
+        <receiver android:name=".CheckInternetBroadcast">
+            <intent-filter>
+                <action android:name="android.net.conn.CONNECTIVITY_CHANGE" />
+            </intent-filter>
+        </receiver>
+
+        <activity android:name=".PaypalCart" />
+        <activity android:name=".ChangeName"></activity>
     </application>
 
 </manifest>

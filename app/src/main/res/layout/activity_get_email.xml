@@ -7,14 +7,18 @@
     tools:context=".GetEmailActivity">
 
     <TextView
+        android:id="@+id/textviewGetEmail"
+        android:layout_alignStart="@+id/getEmail"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_alignParentTop="true"
         android:layout_marginTop="215dp"
+        android:layout_alignBottom="@+id/getEmail"
         android:fontFamily="times"
         android:text="Enter Email Here:"
         android:textColor="#5a0c0c"
-        android:textSize="16sp" />
+        android:textSize="16sp"
+        android:layout_alignLeft="@+id/getEmail" />
     <EditText
         android:id="@+id/getEmail"
         android:layout_centerInParent="true"
@@ -23,7 +27,6 @@
         android:hint="email@provider.com"
         android:layout_width="350dp"
         android:layout_height="50dp"
-        android:layout_marginTop="10dp"
         android:layout_marginLeft="15dp"/>
 
     <TextView
@@ -45,4 +48,6 @@
         android:layout_marginBottom="15dp"
         android:text="next"
         android:onClick="check"/>
+
 </RelativeLayout>
+

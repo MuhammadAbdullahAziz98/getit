@@ -1,12 +1,25 @@
 package com.example.lenovo.getit;
 
+import android.animation.Animator;
+import android.animation.AnimatorSet;
+import android.animation.ObjectAnimator;
+import android.content.ComponentName;
+import android.content.Context;
 import android.content.Intent;
+import android.content.IntentFilter;
+import android.content.ServiceConnection;
+import android.os.IBinder;
 import android.support.annotation.NonNull;
 import android.support.design.widget.Snackbar;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.View;
+import android.view.animation.Animation;
+import android.view.animation.AnimationUtils;
+import android.view.animation.LinearInterpolator;
+import android.view.animation.RotateAnimation;
+import android.widget.ImageView;
 import android.widget.Toast;
 
 import com.google.android.gms.auth.api.signin.GoogleSignIn;
@@ -21,8 +34,14 @@ import com.google.firebase.auth.AuthResult;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
 import com.google.firebase.auth.GoogleAuthProvider;
+import com.google.firebase.auth.SignInMethodQueryResult;
+import com.google.firebase.database.DataSnapshot;
+import com.google.firebase.database.DatabaseError;
 import com.google.firebase.database.DatabaseReference;
 import com.google.firebase.database.FirebaseDatabase;
+import com.google.firebase.database.Query;
+import com.google.firebase.database.ValueEventListener;
+import com.google.firebase.iid.FirebaseInstanceId;
 
 public class MainActivity2 extends BaseActivity implements
         View.OnClickListener {
@@ -33,11 +52,42 @@ public class MainActivity2 extends BaseActivity implements
     private DatabaseReference mDatabaseRef;
 
     private GoogleSignInClient mGoogleSignInClient;
+    SignUpService service;
+    boolean bound = false;
+    CheckInternetBroadcast checker;
+
+    @Override
+    protected void onDestroy() {
+        super.onDestroy();
+        unregisterReceiver(checker);
+    }
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        // [START initialize_auth]
+        // Initialize Firebase Auth
+        mAuth = FirebaseAuth.getInstance();
+        // [END initialize_auth]
+        checker = new CheckInternetBroadcast();
+        IntentFilter filter = new IntentFilter();
+        filter.addAction("android.net.conn.CONNECTIVITY_CHANGE");
+        registerReceiver(checker, filter);
+
+        if(mAuth.getCurrentUser()!=null)
+        {
+            Intent intentLogIn = new Intent(this,SubMain.class);
+            intentLogIn.putExtra("name",mAuth.getCurrentUser().getDisplayName());
+            startActivity(intentLogIn);
+            finish();
+        }
+        else{
+            Intent i = new Intent(this, SignUpService.class);
+
+            bindService(i, connection, Context.BIND_AUTO_CREATE);
+        }
         setContentView(R.layout.activity_main2);
+        animateLogo();
         mDatabaseRef = FirebaseDatabase.getInstance().getReference().child("Users");
         findViewById(R.id.signInButton).setOnClickListener(this);
         // [START config_signin]
@@ -50,11 +100,6 @@ public class MainActivity2 extends BaseActivity implements
 
         mGoogleSignInClient = GoogleSignIn.getClient(this, gso);
 
-        // [START initialize_auth]
-        // Initialize Firebase Auth
-        mAuth = FirebaseAuth.getInstance();
-        // [END initialize_auth]
-
     }
     // [START on_start_check_user]
     @Override
@@ -63,12 +108,12 @@ public class MainActivity2 extends BaseActivity implements
         // Check if user is signed in (non-null) and update UI accordingly.
         FirebaseUser currentUser = mAuth.getCurrentUser();
         try {
-            if (currentUser.getDisplayName() == null || currentUser.getDisplayName().equals("")) {
+            if (currentUser==null) {
                 Toast.makeText(getApplicationContext(), "User Logout SuccessFul", Toast.LENGTH_SHORT).show();
             }
         }
         catch (NullPointerException e){
-            Toast.makeText(getApplicationContext(), "User Logout SuccessFul", Toast.LENGTH_SHORT).show();
+            Toast.makeText(getApplicationContext(), "WELCOME!", Toast.LENGTH_SHORT).show();
         }
     }
     // [END on_start_check_user]
@@ -99,31 +144,64 @@ public class MainActivity2 extends BaseActivity implements
         // [END_EXCLUDE]
 
         AuthCredential credential = GoogleAuthProvider.getCredential(acct.getIdToken(), null);
-        mAuth.signInWithCredential(credential)
-                .addOnCompleteListener(this, new OnCompleteListener<AuthResult>() {
-                    @Override
-                    public void onComplete(@NonNull Task<AuthResult> task) {
-                        if (task.isSuccessful()) {
-                            // Sign in success, update UI with the signed-in user's information
-                            FirebaseUser user = mAuth.getCurrentUser();
-                            String user_id = mAuth.getCurrentUser().getUid();
-                            DatabaseReference currenUserdb = mDatabaseRef.child(user_id);
-                            currenUserdb.child("Name").setValue(user.getDisplayName());
+        if(bound) {
+            mAuth.signInWithCredential(credential)
+                    .addOnCompleteListener(this, new OnCompleteListener<AuthResult>() {
+                        @Override
+                        public void onComplete(@NonNull Task<AuthResult> task) {
+                            if (task.isSuccessful()) {
+                                // Sign in success, update UI with the signed-in user's information
+                                final FirebaseUser user = mAuth.getCurrentUser();
+                                final String name = user.getDisplayName();
+                                DatabaseReference userRef = FirebaseDatabase.getInstance().getReference().child("Users");
+                                userRef.addListenerForSingleValueEvent(new ValueEventListener() {
+                                    @Override
+                                    public void onDataChange(DataSnapshot snapshot) {
+                                        if (snapshot.hasChild(user.getUid())) {
+                                            Intent i = new Intent(getApplicationContext(), SubMain.class);
+                                            String uidUser = mAuth.getCurrentUser().getUid();
+                                            String deviceToken = FirebaseInstanceId.getInstance().getToken();
+                                            mDatabaseRef.child(uidUser).child("device_token").setValue(deviceToken).addOnCompleteListener(new OnCompleteListener<Void>() {
+                                                @Override
+                                                public void onComplete(@NonNull Task<Void> task) {
+                                                    Toast.makeText(getApplicationContext(),"Token Stored",Toast.LENGTH_SHORT).show();
+                                                }
+                                            });
 
-                            Toast.makeText(getApplicationContext(),user.getDisplayName(),Toast.LENGTH_SHORT).show();
-                            Intent i = new Intent(getApplicationContext(),SubMain.class);
-                            i.putExtra("name",user.getDisplayName());
-                            startActivity(i);
-                        } else {
-                            // If sign in fails, display a message to the user.
-                            Snackbar.make(findViewById(R.id.main_layout), "Authentication Failed.", Snackbar.LENGTH_SHORT).show();
+                                            i.putExtra("name", name);
+                                            startActivity(i);
+                                            finish();
+
+                                        }
+                                        else{
+                                            Intent intent1 = new Intent(getApplicationContext(), SetProfilePicActivity.class);
+                                            service.saveProfile(user.getDisplayName());
+                                            intent1.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP);
+                                            startActivity(intent1);
+                                            finish();
+                                        }
+                                    }
+
+                                    @Override
+                                    public void onCancelled(@NonNull DatabaseError databaseError) {
+
+                                    }
+                                });
+
+                            } else {
+                                // If sign in fails, display a message to the user.
+                                Snackbar.make(findViewById(R.id.main_layout), "Authentication Failed.", Snackbar.LENGTH_SHORT).show();
+                            }
+
+                            // [START_EXCLUDE]
+                            hideProgressDialog();
+                            // [END_EXCLUDE]
                         }
-
-                        // [START_EXCLUDE]
-                        hideProgressDialog();
-                        // [END_EXCLUDE]
-                    }
-                });
+                    });
+        }
+        else{
+            Toast.makeText(getApplicationContext(),"Failed to start service", Toast.LENGTH_SHORT).show();
+        }
     }
     // [END auth_with_google]
 
@@ -146,4 +224,60 @@ public class MainActivity2 extends BaseActivity implements
             signIn();
         }
     }
+    void animateLogo(){
+        final AnimatorSet animationSet = new AnimatorSet();
+        final ImageView logo = findViewById(R.id.logo);
+        ObjectAnimator rotate = ObjectAnimator.ofFloat(logo,"rotation",180,0);
+        final ObjectAnimator scaleY = ObjectAnimator.ofFloat(logo,"scaleY", 0.5f, 1f);
+        final ObjectAnimator scaleX = ObjectAnimator.ofFloat(logo,"scaleX", 0.5f, 1f);
+        final RotateAnimation rotation = new RotateAnimation(360, 0, Animation.RELATIVE_TO_SELF, 0.5f, Animation.RELATIVE_TO_SELF, 0.5f);
+        rotation.setDuration(5000);
+        rotation.setInterpolator(new LinearInterpolator());
+
+
+        animationSet.setDuration(2000);
+        animationSet.playTogether(scaleX, scaleY,rotate);
+        animationSet.start();
+        animationSet.addListener(new Animator.AnimatorListener() {
+            @Override
+            public void onAnimationStart(Animator animator) {
+
+            }
+
+            @Override
+            public void onAnimationEnd(Animator animator) {
+                ImageView logoText = null;
+                    logoText = findViewById(R.id.logoText);
+                    if (logoText != null)
+                        logoText.setVisibility(View.VISIBLE);
+
+            }
+
+            @Override
+            public void onAnimationCancel(Animator animator) {
+
+            }
+
+            @Override
+            public void onAnimationRepeat(Animator animator) {
+
+            }
+        });
+
+    }
+
+    private ServiceConnection connection = new ServiceConnection(){
+        @Override
+        public void onServiceConnected(ComponentName className, IBinder service){
+            SignUpService.LocalBinder binder = (SignUpService.LocalBinder) service;
+            MainActivity2.this.service = binder.getService();
+            bound = true;
+        }
+        @Override
+        public void onServiceDisconnected(ComponentName className){
+            bound = false;
+            Toast.makeText(getApplicationContext(),"Service disconnected",Toast.LENGTH_SHORT).show();
+        }
+    };
+
 }

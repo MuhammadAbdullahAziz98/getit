@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="utf-8"?>
+<menu xmlns:android="http://schemas.android.com/apk/res/android">
+
+
+    <item
+        android:id="@+id/qmobile"
+        android:title="QMobile" />
+    <item
+        android:id="@+id/htc"
+        android:title="HTC" />
+    <item
+        android:id="@+id/apple"
+        android:title="Apple" />
+    <item
+        android:id="@+id/Samsung"
+        android:title="Samsung" />
+    <item
+        android:id="@+id/huawei"
+        android:title="Huawei" />
+    <item
+        android:id="@+id/nokia"
+        android:title="Nokia" />
+    <item
+        android:id="@+id/oppo"
+        android:title="Oppo" />
+    <item
+        android:id="@+id/infinix"
+        android:title="Infinix" />
+    <item
+        android:id="@+id/haier"
+        android:title="Haier" />
+</menu>

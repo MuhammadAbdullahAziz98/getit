@@ -4,47 +4,54 @@
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    tools:context=".SignUpEmail">
-
+    tools:context=".SignUpEmail"
+    android:orientation="vertical">
+<LinearLayout
+    android:orientation="vertical"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent">
     <TextView
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_alignParentTop="true"
+        android:layout_gravity="center"
         android:layout_centerHorizontal="true"
         android:layout_marginTop="180dp"
-        android:text="Enter Your Name Below:"
         android:fontFamily="times"
+        android:text="Enter Your Name Below:"
         android:textColor="#5a0c0c"
-        android:textSize="16sp"/>
+        android:textSize="16sp" />
 
     <EditText
         android:id="@+id/getUsername"
         android:layout_width="350dp"
         android:layout_height="50dp"
+        android:layout_gravity="center"
         android:layout_alignParentTop="true"
         android:layout_centerHorizontal="true"
-        android:layout_marginTop="210dp"
         android:hint="Enter Name here"
         android:textAlignment="center" />
 
     <TextView
-
+        android:layout_marginTop="20dp"
+        android:layout_gravity="center"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_alignParentBottom="true"
         android:layout_centerHorizontal="true"
-        android:layout_marginBottom="245dp"
         android:fontFamily="times"
         android:text="Enter Password Below:"
         android:textColor="#5a0c0c"
         android:textSize="16sp" />
+    <LinearLayout
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal">
+        <EditText
 
-    <EditText
         android:id="@+id/getPassword"
         android:layout_width="298dp"
         android:layout_height="50dp"
-        android:layout_alignParentBottom="true"
-        android:layout_marginBottom="188dp"
         android:layout_marginStart="20dp"
         android:fontFamily="times"
         android:hint="Enter Password here:"
@@ -55,32 +62,29 @@
 
     <ImageButton
         android:id="@+id/showPass"
-        android:layout_marginTop="7dp"
         android:layout_width="35dp"
         android:layout_height="35dp"
-        android:layout_alignEnd="@+id/getUsername"
-        android:layout_alignTop="@+id/getPassword"
-        android:background="#FFF"
-        android:src="@drawable/showpassword"
-        android:layout_alignRight="@+id/getUsername" />
+        android:layout_marginTop="7dp"
+        android:background="@color/fui_transparent"
+        android:src="@drawable/showpassword" />
+    </LinearLayout>
+
     <TextView
         android:id="@+id/errorSignUp"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_alignParentBottom="true"
-        android:layout_centerHorizontal="true"
-        android:layout_marginBottom="100dp"
         android:fontFamily="times"
+        android:layout_marginLeft="23dp"
         android:textColor="#FF0000"
-        android:textSize="14dp" />
+        android:textSize="14dp"
+        android:layout_marginStart="23dp" />
 
     <Button
         android:id="@+id/signUpviamail"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_alignParentBottom="true"
-
-        android:layout_centerHorizontal="true"
-        android:layout_marginBottom="130dp"
+        android:layout_width="100dp"
+        android:layout_gravity="center"
+        android:layout_height="50dp"
         android:text="Sign Up" />
+
+</LinearLayout>
 </RelativeLayout>

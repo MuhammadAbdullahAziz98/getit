@@ -1,7 +1,13 @@
 package com.example.lenovo.getit;
 
+import android.app.NotificationChannel;
+import android.app.NotificationChannelGroup;
+import android.app.NotificationManager;
+import android.content.Context;
 import android.content.Intent;
+import android.content.IntentFilter;
 import android.net.Uri;
+import android.os.Build;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
 import android.support.v7.app.AppCompatActivity;
@@ -18,7 +24,10 @@ import android.widget.ProgressBar;
 import android.widget.Toast;
 
 import com.firebase.ui.auth.AuthUI;
+import com.google.android.gms.tasks.OnCompleteListener;
+import com.google.android.gms.tasks.OnFailureListener;
 import com.google.android.gms.tasks.OnSuccessListener;
+import com.google.android.gms.tasks.Task;
 import com.google.firebase.FirebaseApp;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
@@ -27,12 +36,15 @@ import com.google.firebase.database.DataSnapshot;
 import com.google.firebase.database.DatabaseError;
 import com.google.firebase.database.DatabaseReference;
 import com.google.firebase.database.FirebaseDatabase;
+import com.google.firebase.database.ValueEventListener;
+import com.google.firebase.messaging.FirebaseMessaging;
 import com.google.firebase.storage.FirebaseStorage;
 import com.google.firebase.storage.StorageReference;
 import com.google.firebase.storage.UploadTask;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.List;
 
 public class Messenger extends AppCompatActivity {
@@ -57,14 +69,23 @@ public class Messenger extends AppCompatActivity {
     private static final int RC_PHOTO_PICKER =  2;
     private FirebaseAuth mFireBaseAuth;
     private FirebaseAuth.AuthStateListener mAuthStateListener;
+    private DatabaseReference notificationRef;
+    String passage;
+    String tMail;
+    CheckInternetBroadcast checker;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_messenger);
-        FirebaseApp.initializeApp(getApplicationContext()); //initialize firebase for getting it's object's references in the app
+        checker = new CheckInternetBroadcast();
+        IntentFilter filter = new IntentFilter();
+        filter.addAction("android.net.conn.CONNECTIVITY_CHANGE");
+        registerReceiver(checker, filter);
 
+        FirebaseApp.initializeApp(getApplicationContext()); //initialize firebase for getting it's object's references in the app
         Intent intent = getIntent();
-        String passage = intent.getStringExtra("key");
+        passage = intent.getStringExtra("key");
         if(!(passage.equals("null")))
             passage = intent.getStringExtra("key");
         else
@@ -72,10 +93,22 @@ public class Messenger extends AppCompatActivity {
         mUsername = ANONYMOUS;  //initially username is anonymous until signup or log in
 
         mFirebaseDatabase = FirebaseDatabase.getInstance();
+        notificationRef = FirebaseDatabase.getInstance().getReference().child("Notifications");
         mFireBaseAuth = FirebaseAuth.getInstance();
         mFirebaseStorage = FirebaseStorage.getInstance();
-        mUsername = mFireBaseAuth.getCurrentUser().getDisplayName();
+        DatabaseReference mUserNameRef = mFirebaseDatabase.getReference().child("Users").child(mFireBaseAuth.getCurrentUser().getUid());
+        mUserNameRef.addValueEventListener(new ValueEventListener() {
+            @Override
+            public void onDataChange(DataSnapshot dataSnapshot) {
+                mUsername = dataSnapshot.child("Name").getValue().toString();
+            }
+
+            @Override
+            public void onCancelled(DatabaseError databaseError) {
+            }
+        });
         if(passage != null) {
+            tMail = intent.getStringExtra("theirMail");
             mMessagesDatabaseReference = mFirebaseDatabase.getReference().child("messages").child(passage);
             mMessagesChildDatabaseReference =  mFirebaseDatabase.getReference().child("messages").child(passage).child("msgs");
             if(!mMessagesChildDatabaseReference.equals(null))
@@ -83,13 +116,14 @@ public class Messenger extends AppCompatActivity {
 
         }else {
             String mEmail = intent.getStringExtra("mEmail");
-            String tMail = intent.getStringExtra("theirMail");
-            mEmail = mFireBaseAuth.getCurrentUser().getEmail();
+            tMail = intent.getStringExtra("theirMail");
+            mEmail = mFireBaseAuth.getCurrentUser().getUid();
             Info info = new Info(mEmail,tMail);
             mMessagesDatabaseReference = mFirebaseDatabase.getReference().child("messages").push();
             mMessagesInfoReference = mMessagesDatabaseReference.child("info");
             mMessagesInfoReference.setValue(info);
-            mMessagesChildDatabaseReference =  mMessagesDatabaseReference.child("msgs").push();
+            mMessagesChildDatabaseReference =  mMessagesDatabaseReference.child("msgs");
+            mMessagesChildDatabaseReference.push();
             onSignedInInitialize(mUsername);
 
         }
@@ -143,11 +177,36 @@ public class Messenger extends AppCompatActivity {
         mSendButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
+              //  onSignedInInitialize(mUsername);
                 Message message = new Message(mMessageEditText.getText().toString(), mUsername, null);
                 mMessagesChildDatabaseReference = mMessagesDatabaseReference.child("msgs");
-                mMessagesChildDatabaseReference.push().setValue(message);
-                // Clear input box
-                onSignedInInitialize(mUsername);
+                mMessagesChildDatabaseReference.push().setValue(message).addOnCompleteListener(new OnCompleteListener<Void>() {
+                    @Override
+                    public void onComplete(@NonNull Task<Void> task) {
+                        if(task.isSuccessful()){
+                            HashMap<String,String> chatNotification = new HashMap<>();
+                            chatNotification.put("from",FirebaseAuth.getInstance().getCurrentUser().getUid());
+                            chatNotification.put("type","Message");
+                            notificationRef.child(tMail).push().setValue(chatNotification).addOnCompleteListener(new OnCompleteListener<Void>() {
+                                @Override
+                                public void onComplete(@NonNull Task<Void> task) {
+                                    if(task.isSuccessful()){
+                                        //             Toast.makeText(getApplicationContext(),"Message Sent",Toast.LENGTH_SHORT).show();
+                                    }
+                                }
+
+                            }).addOnFailureListener(new OnFailureListener() {
+                                @Override
+                                public void onFailure(@NonNull Exception e) {
+
+                                    //       Toast.makeText(getApplicationContext(),e.getMessage(),Toast.LENGTH_SHORT).show();
+
+                                }
+                            });
+
+                        }
+                    }
+                });// Clear input box
                 mMessageEditText.setText("");
             }
         });
@@ -156,11 +215,12 @@ public class Messenger extends AppCompatActivity {
             @Override
             public void onAuthStateChanged(@NonNull FirebaseAuth firebaseAuth) {
                 FirebaseUser user = firebaseAuth.getCurrentUser();
+
                 if(user != null)
                 {
                     //user is signed in
                     Toast.makeText(getApplicationContext(),"Welcome!",Toast.LENGTH_SHORT).show();
-                    onSignedInInitialize(user.getDisplayName());
+                 //   onSignedInInitialize(user.getDisplayName());
                 }
                 else{
                     //user is signed out
@@ -186,9 +246,35 @@ public class Messenger extends AppCompatActivity {
                             Uri downloadUrl = uri;
                             Message message = new Message(null,mUsername,downloadUrl.toString());
                             mMessagesChildDatabaseReference = mMessagesDatabaseReference.child("msgs");
-                            mMessagesChildDatabaseReference.push().setValue(message);
+                            mMessagesChildDatabaseReference.push().setValue(message).addOnCompleteListener(new OnCompleteListener<Void>() {
+                                @Override
+                                public void onComplete(@NonNull Task<Void> task) {
+                                    if(task.isSuccessful()){
+                                        HashMap<String,String> chatNotification = new HashMap<>();
+                                        chatNotification.put("from",FirebaseAuth.getInstance().getCurrentUser().getUid());
+                                        chatNotification.put("type","Message");
+                                        notificationRef.child(tMail).push().setValue(chatNotification).addOnCompleteListener(new OnCompleteListener<Void>() {
+                                            @Override
+                                            public void onComplete(@NonNull Task<Void> task) {
+                                                if(task.isSuccessful()){
+                                                    //             Toast.makeText(getApplicationContext(),"Message Sent",Toast.LENGTH_SHORT).show();
+                                                }
+                                            }
+
+                                        }).addOnFailureListener(new OnFailureListener() {
+                                            @Override
+                                            public void onFailure(@NonNull Exception e) {
+
+                                                //       Toast.makeText(getApplicationContext(),e.getMessage(),Toast.LENGTH_SHORT).show();
+
+                                            }
+                                        });
+
+                                    }
+                                }
+                            });
                             // Clear input box
-                            onSignedInInitialize(mUsername);
+//                            onSignedInInitialize(mUsername);
 
                         }
                     });
@@ -214,39 +300,44 @@ public class Messenger extends AppCompatActivity {
         }
     }
     private void attachDatabaseReadListener() {
-        if (mChildEventListener == null) {
-            mChildEventListener = new ChildEventListener() {
-                //check for new msgs added in messages table:
-                @Override
-                public void onChildAdded(@NonNull DataSnapshot dataSnapshot, @Nullable String s) {
+            if(mChildEventListener==null){
+                mChildEventListener = new ChildEventListener() {
+                    //check for new msgs added in messages table:
+                    @Override
+                    public void onChildAdded(@NonNull DataSnapshot dataSnapshot, @Nullable String s) {
 
-                    Message message = dataSnapshot.getValue(Message.class);
-                    mMessageAdapter.add(message);
-                    //if any new msgs , display them.
-                }
+                        Message message = dataSnapshot.getValue(Message.class);
+                        mMessageAdapter.add(message);
+                        //if any new msgs , display them.
+                    }
 
-                @Override
-                public void onChildChanged(@NonNull DataSnapshot dataSnapshot, @Nullable String s) {
+                    @Override
+                    public void onChildChanged(@NonNull DataSnapshot dataSnapshot, @Nullable String s) {
 
-                }
+                    }
 
-                @Override
-                public void onChildRemoved(@NonNull DataSnapshot dataSnapshot) {
+                    @Override
+                    public void onChildRemoved(@NonNull DataSnapshot dataSnapshot) {
 
-                }
+                    }
 
-                @Override
-                public void onChildMoved(@NonNull DataSnapshot dataSnapshot, @Nullable String s) {
+                    @Override
+                    public void onChildMoved(@NonNull DataSnapshot dataSnapshot, @Nullable String s) {
 
-                }
+                    }
 
-                @Override
-                public void onCancelled(@NonNull DatabaseError databaseError) {
+                    @Override
+                    public void onCancelled(@NonNull DatabaseError databaseError) {
 
-                }
-            };
+                    }
+                };
+            }
             mMessagesChildDatabaseReference.addChildEventListener(mChildEventListener);
-        }
+    }
+    @Override
+    protected void onDestroy() {
+        super.onDestroy();
+        unregisterReceiver(checker);
     }
 
 }
